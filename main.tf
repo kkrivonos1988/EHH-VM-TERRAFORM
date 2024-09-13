@@ -1,4 +1,5 @@
 provider "azurerm" {
+  subscription_id = "f4271ee4-c913-4d2e-b833-7c509d41a2e4"
   features {}
 }
 
@@ -23,9 +24,9 @@ resource "azurerm_subnet" "internal" {
 
 resource "azurerm_public_ip" "EHH_public_ip" {
   name                = "EHH-public-ip"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  allocation_method   = "Dynamic"
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
+  allocation_method = "static"
 }
 
 resource "azurerm_network_interface" "main" {
@@ -36,15 +37,21 @@ resource "azurerm_network_interface" "main" {
   ip_configuration {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.internal.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.EHH_public_ip 
+    private_ip_address_allocation = "Static"
+    public_ip_address_id          = azurerm_public_ip.EHH_public_ip.id
   }
+}
+
+resource "azurerm_virtual_network_dns_servers" "EHH-DNS" {
+  
+  virtual_network_id = azurerm_virtual_network.main.id
+  dns_servers = ["192.168.1.10"]
 }
 
 resource "azurerm_network_security_group" "EHH_nsg" {
   name                = "EHH-nsg"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.main.location
+  resource_group_name = azurerm_resource_group.main.name
 
   security_rule {
     name                       = "RDP"
