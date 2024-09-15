@@ -1,9 +1,11 @@
 
 
 variable "prefix" {
-  description = "EHH-DC"
+  default = "EHH-01"
+  description = "Name des Servers"
 }
 
 variable "location" {
-  description = "germanywestcentral"
+  default = "germanywestcentral"
+  description = "location"
 }

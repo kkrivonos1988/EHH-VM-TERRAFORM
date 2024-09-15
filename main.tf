@@ -4,12 +4,12 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "EHH-01" {
-  name     = "EHH-01-resources"
-  location = "germanywestcentral"
+  name     = "${var.prefix}-resources"
+  location = "${var.location}"
 }
 
 resource "azurerm_virtual_network" "EHH-01" {
-  name                = "EHH-01-network"
+  name                = "${var.prefix}-network"
   address_space       = ["192.168.0.0/16"]
   location            = azurerm_resource_group.EHH-01.location
   resource_group_name = azurerm_resource_group.EHH-01.name
@@ -22,15 +22,15 @@ resource "azurerm_subnet" "internal" {
   address_prefixes     = ["192.168.1.0/24"]
 }
 
-resource "azurerm_public_ip" "EHH01_public_ip" {
-  name                = "EHH-01-public-ip"
+resource "azurerm_public_ip" "EHH-01_public_ip" {
+  name                = "${var.prefix}-public-ip"
   location            = azurerm_resource_group.EHH-01.location
   resource_group_name = azurerm_resource_group.EHH-01.name
   allocation_method   = "Static"
 }
 
 resource "azurerm_network_interface" "EHH-01" {
-  name                = "EHH-01-nic"
+  name                = "${var.prefix}-nic"
   resource_group_name = azurerm_resource_group.EHH-01.name
   location            = azurerm_resource_group.EHH-01.location
 
@@ -38,7 +38,7 @@ resource "azurerm_network_interface" "EHH-01" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.internal.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.EHH01_public_ip.id
+    public_ip_address_id          = azurerm_public_ip.EHH-01_public_ip.id
   }
 }
 
@@ -48,10 +48,11 @@ resource "azurerm_virtual_network_dns_servers" "EHH-01-DNS" {
   dns_servers = ["192.168.1.10"]
 }
 
-resource "azurerm_network_security_group" "EHH01_nsg" {
-  name                = "EHH-01-nsg"
+resource "azurerm_network_security_group" "EHH-01_nsg" {
+  name                = "${var.prefix}-nsg"
   location            = azurerm_resource_group.EHH-01.location
   resource_group_name = azurerm_resource_group.EHH-01.name
+  
 
   security_rule {
     name                       = "RDP"
@@ -75,11 +76,12 @@ resource "azurerm_network_security_group" "EHH01_nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
 }
 
 
 resource "azurerm_windows_virtual_machine" "EHH-01" {
-  name                = "EHH-01-vm"
+  name                = "${var.prefix}-vm"
   resource_group_name = azurerm_resource_group.EHH-01.name
   location            = azurerm_resource_group.EHH-01.location
   size                = "Standard_B2s"
