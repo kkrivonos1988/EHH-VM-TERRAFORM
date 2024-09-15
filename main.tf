@@ -3,55 +3,55 @@ provider "azurerm" {
   features {}
 }
 
-resource "azurerm_resource_group" "main" {
-  name     = "${var.prefix}-resources"
-  location = var.location
+resource "azurerm_resource_group" "EHH-01" {
+  name     = "EHH-01-resources"
+  location = "germanywestcentral"
 }
 
-resource "azurerm_virtual_network" "main" {
-  name                = "${var.prefix}-network"
+resource "azurerm_virtual_network" "EHH-01" {
+  name                = "EHH-01-network"
   address_space       = ["192.168.0.0/16"]
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = azurerm_resource_group.EHH-01.location
+  resource_group_name = azurerm_resource_group.EHH-01.name
 }
 
 resource "azurerm_subnet" "internal" {
   name                 = "internal"
-  resource_group_name  = azurerm_resource_group.main.name
-  virtual_network_name = azurerm_virtual_network.main.name
+  resource_group_name  = azurerm_resource_group.EHH-01.name
+  virtual_network_name = azurerm_virtual_network.EHH-01.name
   address_prefixes     = ["192.168.1.0/24"]
 }
 
-resource "azurerm_public_ip" "EHH_public_ip" {
-  name                = "EHH-public-ip"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  allocation_method = "static"
+resource "azurerm_public_ip" "EHH01_public_ip" {
+  name                = "EHH-01-public-ip"
+  location            = azurerm_resource_group.EHH-01.location
+  resource_group_name = azurerm_resource_group.EHH-01.name
+  allocation_method   = "Static"
 }
 
-resource "azurerm_network_interface" "main" {
-  name                = "${var.prefix}-nic"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+resource "azurerm_network_interface" "EHH-01" {
+  name                = "EHH-01-nic"
+  resource_group_name = azurerm_resource_group.EHH-01.name
+  location            = azurerm_resource_group.EHH-01.location
 
   ip_configuration {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.internal.id
-    private_ip_address_allocation = "Static"
-    public_ip_address_id          = azurerm_public_ip.EHH_public_ip.id
+    private_ip_address_allocation = "Dynamic"
+    public_ip_address_id          = azurerm_public_ip.EHH01_public_ip.id
   }
 }
 
-resource "azurerm_virtual_network_dns_servers" "EHH-DNS" {
+resource "azurerm_virtual_network_dns_servers" "EHH-01-DNS" {
   
-  virtual_network_id = azurerm_virtual_network.main.id
+  virtual_network_id = azurerm_virtual_network.EHH-01.id
   dns_servers = ["192.168.1.10"]
 }
 
-resource "azurerm_network_security_group" "EHH_nsg" {
-  name                = "EHH-nsg"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+resource "azurerm_network_security_group" "EHH01_nsg" {
+  name                = "EHH-01-nsg"
+  location            = azurerm_resource_group.EHH-01.location
+  resource_group_name = azurerm_resource_group.EHH-01.name
 
   security_rule {
     name                       = "RDP"
@@ -78,27 +78,27 @@ resource "azurerm_network_security_group" "EHH_nsg" {
 }
 
 
-resource "azurerm_windows_virtual_machine" "main" {
-  name                = "${var.prefix}-vm"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+resource "azurerm_windows_virtual_machine" "EHH-01" {
+  name                = "EHH-01-vm"
+  resource_group_name = azurerm_resource_group.EHH-01.name
+  location            = azurerm_resource_group.EHH-01.location
   size                = "Standard_B2s"
   admin_username      = "adminuser"
   admin_password      = "Start123$*"
   network_interface_ids = [
-    azurerm_network_interface.main.id,
+    azurerm_network_interface.EHH-01.id,
   ]
 
   source_image_reference {
     publisher = "MicrosoftWindowsServer"
     offer     = "WindowsServer"
-    sku       = "2022-datacenter-azure-editionr"
+    sku       = "2022-datacenter-azure-edition"
     version   = "latest"
   }
 
   os_disk {
     name                 = "System"
-    disk_size_gb         = 120
+    disk_size_gb         = 127
     storage_account_type = "Standard_LRS"
     caching              = "ReadWrite"
   }
