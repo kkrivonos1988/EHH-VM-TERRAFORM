@@ -1,0 +1,121 @@
+---
+- hosts: windows_clients
+  become: yes
+  become_method: runas
+  tasks:
+ 
+    - name: Erstelle eine Gruppenrichtlinie zur Einschränkung von cmd und PowerShell
+      win_shell: |
+        New-Item -Path "HKLM:\Software\Policies\Microsoft\Windows\System" -Force
+        Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\System" -Name "EnableLUA" -Value 1
+        Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\System" -Name "ConsentPromptBehaviorAdmin" -Value 2
+        Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\System" -Name "ConsentPromptBehaviorUser" -Value 0
+
+    - name: Beschränke den Zugang zu cmd und PowerShell
+      win_shell: |
+        $admins = Get-LocalGroupMember -Group "Administrators"
+        foreach ($admin in $admins) {
+          icacls "C:\Windows\System32\cmd.exe" /deny $admin:RX
+          icacls "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" /deny $admin:RX
+        }
+
+    - name: Installiere Sicherheitsupdates
+      win_updates:
+        category_names:
+          - SecurityUpdates
+        reboot: yes
+
+    - name: Konfiguriere die Windows-Firewall
+      win_feature:
+        name: "Windows-Defender-Features"
+        state: present
+
+    - name: Erstelle eine Firewall-Regel
+      win_firewall_rule:
+        name: "Allow RDP"
+        enable: yes
+        direction: in
+        action: allow
+        localport: 3389
+        protocol: TCP
+
+    - name: Erstelle local Admin
+      win_user:
+        name: "Local-Admin"
+        password: "Local123!"
+        state: present
+
+    - name: Füge den Benutzer zur Administratorengruppe hinzu
+      win_group_membership:
+        name: "Administrators"
+        members: "Local-Admin"
+        state: present
+
+    - name: Installiere 7-Zip
+      win_chocolatey:
+        name: 7zip
+        state: present
+
+    - name: Installiere Notepad++
+      win_chocolatey:
+        name: notepadplusplus
+        state: present
+
+    - name: Installiere Google Chrome
+      win_chocolatey:
+        name: googlechrome
+        state: present
+
+    - name: Erstelle einen Systemwiederherstellungspunkt
+      win_shell: |
+        Checkpoint-Computer -Description "Vor der Konfiguration" -RestorePointType "MODIFY_SETTINGS"
+
+    - name: Erstelle ein Backup-Verzeichnis
+      win_file:
+        path: C:\Backup
+        state: directory
+
+    - name: Sichere wichtige Dateien
+      win_copy:
+        src: C:\WichtigeDateien
+        dest: C:\Backup\WichtigeDateien
+        
+        - name: Setze Berechtigungen für C:\Backup
+      win_acl:
+        path: C:\Backup
+        user: Administrators
+        rights: fullcontrol
+        type: allow
+        inherit: yes
+
+    - name: Entferne Schreibrechte für Nicht-Administratoren
+      win_acl:
+        path: C:\Backup
+        user: Users
+        rights: read
+        type: allow
+        inherit: yes
+
+    - name: Installiere das Windows Event Forwarding
+      win_feature:
+        name: "Windows-Event-Collector"
+        state: present
+
+    - name: Aktivierung der Ereignisprotokollierung
+      win_shell: |
+        wecutil qc /q
+
+    - name: Bereinige temporäre Dateien
+      win_shell: |
+        Remove-Item -Path "C:\Windows\Temp\*" -Recurse -Force
+        Remove-Item -Path "C:\Users\*\AppData\Local\Temp\*" -Recurse -Force
+
+    - name: Windows Update-Einstellungen
+      win_shell: |
+        Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "NoAutoUpdate" -Value 0
+        Set-ItemProperty -Path "HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate\AU" -Name "AUOptions" -Value 4
+        
+   - name: System neustart
+      win_reboot:
+        msg: "Das System wird neu gestartet."
+        timeout: 30
