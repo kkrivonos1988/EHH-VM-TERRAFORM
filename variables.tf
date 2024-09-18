@@ -1,7 +1,7 @@
 
 
 variable "prefix" {
-  default = "EHH-01"
+  default = "EHH-DC01"
   description = "Name des Servers"
 }
 
