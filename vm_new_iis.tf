@@ -27,6 +27,7 @@ resource "azurerm_public_ip" "EHH-01_public_ip" {
   location            = azurerm_resource_group.EHH-01.location
   resource_group_name = azurerm_resource_group.EHH-01.name
   allocation_method   = "Static"
+  network_security_group_id = azurerm_network_security_group.EHH-01_nsg.id
 }
 
 resource "azurerm_network_interface" "EHH-01" {
