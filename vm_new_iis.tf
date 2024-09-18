@@ -13,6 +13,7 @@ resource "azurerm_virtual_network" "EHH-01" {
   address_space       = ["192.168.0.0/16"]
   location            = azurerm_resource_group.EHH-01.location
   resource_group_name = azurerm_resource_group.EHH-01.name
+  dns_servers         = ["192.168.1.10"]  # Korrigiert, DNS-Server hier konfiguriert
 }
 
 resource "azurerm_subnet" "internal" {
@@ -27,7 +28,6 @@ resource "azurerm_public_ip" "EHH-01_public_ip" {
   location            = azurerm_resource_group.EHH-01.location
   resource_group_name = azurerm_resource_group.EHH-01.name
   allocation_method   = "Static"
-  network_security_group_id = azurerm_network_security_group.EHH-01_nsg.id
 }
 
 resource "azurerm_network_interface" "EHH-01" {
@@ -41,19 +41,15 @@ resource "azurerm_network_interface" "EHH-01" {
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = azurerm_public_ip.EHH-01_public_ip.id
   }
-}
 
-resource "azurerm_virtual_network_dns_servers" "EHH-01-DNS" {
-  
-  virtual_network_id = azurerm_virtual_network.EHH-01.id
-  dns_servers = ["192.168.1.10"]
+  # NSG der Netzwerkschnittstelle zuweisen
+  network_security_group_id = azurerm_network_security_group.EHH-01_nsg.id
 }
 
 resource "azurerm_network_security_group" "EHH-01_nsg" {
   name                = "${var.prefix}-nsg"
   location            = azurerm_resource_group.EHH-01.location
   resource_group_name = azurerm_resource_group.EHH-01.name
-  
 
   security_rule {
     name                       = "RDP"
@@ -66,6 +62,7 @@ resource "azurerm_network_security_group" "EHH-01_nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+
   security_rule {
     name                       = "web"
     priority                   = 310
@@ -77,9 +74,7 @@ resource "azurerm_network_security_group" "EHH-01_nsg" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
-
 }
-
 
 resource "azurerm_windows_virtual_machine" "EHH-01" {
   name                = "${var.prefix}-vm"
@@ -105,6 +100,7 @@ resource "azurerm_windows_virtual_machine" "EHH-01" {
     storage_account_type = "Standard_LRS"
     caching              = "ReadWrite"
   }
+}
 
 resource "azurerm_virtual_machine_extension" "web_server_install" {
   name                       = "${var.prefix}-wsi"
@@ -119,6 +115,4 @@ resource "azurerm_virtual_machine_extension" "web_server_install" {
       "commandToExecute": "powershell -ExecutionPolicy Unrestricted Install-WindowsFeature -Name Web-Server -IncludeAllSubFeature -IncludeManagementTools"
     }
   SETTINGS
-}
-
 }
