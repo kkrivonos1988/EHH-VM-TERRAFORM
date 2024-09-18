@@ -105,11 +105,18 @@ resource "azurerm_windows_virtual_machine" "EHH-01" {
   }
 }
 
-  custom_data = base64encode
-  (<<EOF
-<powershell>
-  Install-WindowsFeature -name Web-Server -IncludeManagementTools
-</powershell>
-EOF
-  )
+resource "azurerm_virtual_machine_extension" "web_server_install" {
+  name                       = "${var.prefix}-wsi"
+  virtual_machine_id         = azurerm_windows_virtual_machine.EHH-01.id
+  publisher                  = "Microsoft.Compute"
+  type                       = "CustomScriptExtension"
+  type_handler_version       = "1.10"  # Stelle sicher, dass die neueste Version verwendet wird
+  auto_upgrade_minor_version = true
+
+  settings = <<SETTINGS
+    {
+      "commandToExecute": "powershell -ExecutionPolicy Unrestricted -Command \"Install-WindowsFeature -Name Web-Server -IncludeAllSubFeature -IncludeManagementTools\""
+    }
+  SETTINGS
+}
 }
