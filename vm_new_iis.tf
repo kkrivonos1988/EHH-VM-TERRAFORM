@@ -99,7 +99,7 @@ resource "azurerm_windows_virtual_machine" "EHH-01" {
 
   os_disk {
     name                 = "System"
-    disk_size_gb         = 127
+    disk_size_gb         = 200
     storage_account_type = "Standard_LRS"
     caching              = "ReadWrite"
   }
@@ -115,7 +115,7 @@ resource "azurerm_virtual_machine_extension" "web_server_install" {
 
   settings = <<SETTINGS
     {
-      "commandToExecute": "powershell -ExecutionPolicy Unrestricted -Command \"Install-WindowsFeature -Name Web-Server -IncludeAllSubFeature -IncludeManagementTools\""
+      "commandToExecute": "powershell Install-WindowsFeature -name Web-Server -IncludeManagementTools;"
     }
   SETTINGS
 }
